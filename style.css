@@ -357,7 +357,6 @@ h3 {
 }
 
 .slot-pair:has(.slot.filled:first-child):has(.slot.filled:last-child)::before {
-    content: '❤️';
     font-size: 20px;
 }
 
