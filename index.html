@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TableSitter - Smart Seating for Your Events</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing" class="screen active">
+        <div class="container">
+            <div class="logo">🪑 TableSitter</div>
+            <h1>Smart Seating for Your Events</h1>
+            <p class="subtitle">Stop awkward dinner parties. Let TableSitter create the perfect seating arrangement based on your guests' relationships.</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">👥</div>
+                    <h3>Mix & Match</h3>
+                    <p>Balance comfort zones with new connections</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💕</div>
+                    <h3>Smart Pairing</h3>
+                    <p>Keep couples close, friends distributed</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Quick Setup</h3>
+                    <p>5 minutes to perfect seating</p>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="app.goToStep('guest-count')">Get Started</button>
+        </div>
+    </div>
+
+    <!-- Step 1: Guest Count -->
+    <div id="guest-count" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>How many guests?</h2>
+            <input type="number" id="guestCountInput" min="4" max="50" placeholder="Enter number of guests" class="input-large">
+            <button class="btn-primary" onclick="app.setGuestCount()">Next</button>
+        </div>
+    </div>
+
+    <!-- Step 2: Table Layout -->
+    <div id="table-layout" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Choose your table layout</h2>
+            <p class="step-subtitle">Select the shape of your dining table</p>
+            
+            <div class="layout-options">
+                <div class="layout-card" onclick="app.selectLayout('rectangular')">
+                    <div class="layout-visual rectangular-visual"></div>
+                    <h3>Rectangular</h3>
+                    <p>Classic long table</p>
+                </div>
+                
+                <div class="layout-card" onclick="app.selectLayout('circular')">
+                    <div class="layout-visual circular-visual"></div>
+                    <h3>Circular</h3>
+                    <p>Round table</p>
+                </div>
+            </div>
+            
+            <button class="btn-secondary" onclick="app.goToStep('guest-count')">Back</button>
+        </div>
+    </div>
+
+    <!-- Step 3: Guest Names -->
+    <div id="guest-names" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Add your guests</h2>
+            <p class="step-subtitle">Enter the names of all guests attending</p>
+            
+            <div class="name-input-container">
+                <input type="text" id="nameInput" placeholder="Guest name" class="input-medium">
+                <button class="btn-secondary" onclick="app.addGuest()">Add</button>
+            </div>
+            
+            <div id="guestList" class="guest-list"></div>
+            
+            <button class="btn-primary" id="namesNextBtn" onclick="app.goToStep('couples')" disabled>Next</button>
+        </div>
+    </div>
+
+    <!-- Step 4: Couples -->
+    <div id="couples" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Any couples or partners?</h2>
+            <p class="step-subtitle">Mark people who should sit close (max 1 seat apart)</p>
+            
+            <div class="couple-input">
+                <select id="couple1" class="input-medium"></select>
+                <span class="couple-connector">+</span>
+                <select id="couple2" class="input-medium"></select>
+                <button class="btn-secondary" onclick="app.addCouple()">Add Couple</button>
+            </div>
+            
+            <div id="coupleList" class="couple-list"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="app.goToStep('guest-names')">Back</button>
+                <button class="btn-primary" onclick="app.startRelationships()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 5: Relationships -->
+    <div id="relationships" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2 id="relationshipTitle">Who does [Name] know well?</h2>
+            <p class="step-subtitle">Select up to 3 people (we'll keep them apart to encourage mixing!)</p>
+            
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p class="progress-text"><span id="currentPerson">1</span> of <span id="totalPersons">0</span></p>
+            
+            <div id="relationshipOptions" class="relationship-options"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="app.previousPerson()" id="prevBtn">Previous</button>
+                <button class="btn-primary" onclick="app.nextPerson()" id="nextBtn">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Results -->
+    <div id="results" class="screen">
+        <div class="container-wide">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Your Seating Arrangement</h2>
+            <p class="step-subtitle">Here's the optimal seating for maximum mixing</p>
+            
+            <div id="tableDisplay" class="table-display"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="app.reset()">Start Over</button>
+                <button class="btn-primary" onclick="app.exportSeating()">Export as Text</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="algorithm.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
