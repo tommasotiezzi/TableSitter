@@ -1,18 +1,65 @@
-function generateSeating(numGuests, couples, bestFriends, keepApart, introverts, relationships, layout) {
+function generateSeating(numGuests, couples, bestFriends, cupidMatches, keepApart, introverts, relationships, layout) {
+    // Failsafe priority check: keep apart > couples > cupid > best friends
+    const violations = checkViolations(couples, cupidMatches, bestFriends, keepApart);
+    if (violations.length > 0) {
+        console.warn('Constraint violations detected:', violations);
+        // Remove lower priority constraints that conflict
+        violations.forEach(v => {
+            if (v.type === 'cupid_vs_keepapart') {
+                // Remove cupid match
+                const idx = cupidMatches.findIndex(p => 
+                    (p[0] === v.pair[0] && p[1] === v.pair[1]) || 
+                    (p[0] === v.pair[1] && p[1] === v.pair[0])
+                );
+                if (idx !== -1) cupidMatches.splice(idx, 1);
+            } else if (v.type === 'bf_vs_keepapart') {
+                // Remove best friend
+                const idx = bestFriends.findIndex(p => 
+                    (p[0] === v.pair[0] && p[1] === v.pair[1]) || 
+                    (p[0] === v.pair[1] && p[1] === v.pair[0])
+                );
+                if (idx !== -1) bestFriends.splice(idx, 1);
+            }
+        });
+    }
+    
     const allBestFriends = [...couples, ...bestFriends];
+    const allTogetherPairs = [...couples, ...cupidMatches]; // Couples + cupid treated same
     const arrangement = new Array(numGuests).fill(-1);
     const used = new Array(numGuests).fill(false);
     
-    // Place couples
-    placeCouples(arrangement, couples, used, numGuests, layout);
+    // Place couples and cupid matches (same priority)
+    placeCouples(arrangement, allTogetherPairs, used, numGuests, layout);
     
     // Fill remaining
-    fillRemaining(arrangement, allBestFriends, keepApart, introverts, relationships, used, numGuests, layout);
+    fillRemaining(arrangement, allBestFriends, cupidMatches, keepApart, introverts, relationships, used, numGuests, layout);
     
     return arrangement;
 }
 
-function placeCouples(arr, couples, used, num, layout) {
+function checkViolations(couples, cupidMatches, bestFriends, keepApart) {
+    const violations = [];
+    
+    // Check keep apart vs everything
+    keepApart.forEach(([a, b]) => {
+        // vs couples (shouldn't happen, but check)
+        if (couples.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a))) {
+            violations.push({ type: 'couple_vs_keepapart', pair: [a, b] });
+        }
+        // vs cupid
+        if (cupidMatches.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a))) {
+            violations.push({ type: 'cupid_vs_keepapart', pair: [a, b] });
+        }
+        // vs best friends
+        if (bestFriends.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a))) {
+            violations.push({ type: 'bf_vs_keepapart', pair: [a, b] });
+        }
+    });
+    
+    return violations;
+}
+
+function placeCouples(arr, pairs, used, num, layout) {
     couples.forEach(([p1, p2]) => {
         let placed = false;
         
@@ -58,7 +105,7 @@ function placeCouples(arr, couples, used, num, layout) {
     });
 }
 
-function fillRemaining(arr, allBF, keepApart, introverts, rels, used, num, layout) {
+function fillRemaining(arr, allBF, cupidMatches, keepApart, introverts, rels, used, num, layout) {
     const remaining = [];
     for (let i = 0; i < num; i++) {
         if (!used[i]) remaining.push(i);
@@ -72,7 +119,7 @@ function fillRemaining(arr, allBF, keepApart, introverts, rels, used, num, layou
         
         for (let pos = 0; pos < num; pos++) {
             if (arr[pos] === -1) {
-                const score = scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, layout);
+                const score = scorePos(person, pos, arr, allBF, cupidMatches, keepApart, introverts, rels, num, layout);
                 if (score > bestScore) {
                     bestScore = score;
                     bestPos = pos;
@@ -84,7 +131,7 @@ function fillRemaining(arr, allBF, keepApart, introverts, rels, used, num, layou
     }
 }
 
-function scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, layout) {
+function scorePos(person, pos, arr, allBF, cupidMatches, keepApart, introverts, rels, num, layout) {
     let score = 0;
     
     const personRels = rels[person] || [];
@@ -97,6 +144,13 @@ function scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, lay
     allBF.forEach(([a, b]) => {
         if (a === person) personBF.push(b);
         if (b === person) personBF.push(a);
+    });
+    
+    // Get person's cupid matches
+    const personCupid = [];
+    cupidMatches.forEach(([a, b]) => {
+        if (a === person) personCupid.push(b);
+        if (b === person) personCupid.push(a);
     });
     
     // Get keep apart
@@ -114,13 +168,20 @@ function scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, lay
     interactionZone.forEach(zonePos => {
         const zonePerson = arr[zonePos];
         if (zonePerson !== -1) {
-            // Keep apart violation
+            // PRIORITY 1: Keep apart violation - MASSIVE PENALTY
             if (mustAvoid.includes(zonePerson)) {
-                score -= 500;
+                score -= 1000;
                 return;
             }
             
-            // Best friend in zone
+            // PRIORITY 2: Cupid match in zone - BIG BONUS (we want them together)
+            if (personCupid.includes(zonePerson)) {
+                score += 150;
+                knownInZone++;
+                return;
+            }
+            
+            // Best friend in zone - penalty (we want mixing)
             if (personBF.includes(zonePerson)) {
                 score -= 120;
                 knownInZone++;
@@ -145,6 +206,13 @@ function scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, lay
     nearbyZone.forEach(nearPos => {
         const nearPerson = arr[nearPos];
         if (nearPerson !== -1) {
+            // Cupid matches nearby is also good
+            if (personCupid.includes(nearPerson)) {
+                hasKnownNearby = true;
+                score += 100;
+                return;
+            }
+            
             if (personBF.includes(nearPerson)) {
                 hasKnownNearby = true;
                 score += 80;
@@ -162,12 +230,12 @@ function scorePos(person, pos, arr, allBF, keepApart, introverts, rels, num, lay
     });
     
     // Introvert penalty
-    if (isIntrovert && !hasKnownNearby && (personRels.length > 0 || personBF.length > 0)) {
+    if (isIntrovert && !hasKnownNearby && (personRels.length > 0 || personBF.length > 0 || personCupid.length > 0)) {
         score -= 100;
     }
     
     // Isolation penalty
-    if (hasStrangerInZone && !hasKnownNearby && (personRels.length > 0 || personBF.length > 0)) {
+    if (hasStrangerInZone && !hasKnownNearby && (personRels.length > 0 || personBF.length > 0 || personCupid.length > 0)) {
         score -= 40;
     }
     

@@ -6,6 +6,7 @@ const state = {
     introverts: [],
     couples: [],
     bestFriends: [],
+    cupidMatches: [],
     keepApart: [],
     outsiders: [],
     relationships: {}
@@ -18,6 +19,7 @@ function goToStep(stepId) {
     if (step) step.classList.add('active');
     
     if (stepId === 'build-groups') initBuildGroups();
+    if (stepId === 'cupid') populateCupid();
     if (stepId === 'keep-apart') populateKeepApart();
 }
 
@@ -126,6 +128,13 @@ function initDragDrop() {
     });
     
     slots.forEach(slot => {
+        // Click on empty slot shows hint
+        slot.addEventListener('click', () => {
+            if (!slot.classList.contains('filled')) {
+                showDragHint(slot);
+            }
+        });
+        
         slot.addEventListener('dragover', e => {
             e.preventDefault();
             if (!slot.classList.contains('filled')) slot.classList.add('drag-over');
@@ -142,6 +151,26 @@ function initDragDrop() {
             fillSlot(slot, id);
         });
     });
+}
+
+function showDragHint(slot) {
+    // Create tooltip
+    const hint = document.createElement('div');
+    hint.className = 'drag-hint';
+    hint.textContent = 'Drag a guest card here';
+    hint.style.position = 'absolute';
+    hint.style.bottom = '110%';
+    hint.style.left = '50%';
+    hint.style.transform = 'translateX(-50%)';
+    hint.style.whiteSpace = 'nowrap';
+    
+    slot.style.position = 'relative';
+    slot.appendChild(hint);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+        if (hint.parentElement) hint.remove();
+    }, 2000);
 }
 
 function fillSlot(slot, guestId) {
@@ -227,11 +256,68 @@ function finishGroups() {
     console.log('Couples:', state.couples);
     console.log('Best Friends:', state.bestFriends);
     
-    goToStep('keep-apart');
+    goToStep('cupid');
 }
 
+// Step 5: Play Cupid
+function populateCupid() {
+    const opts = state.guests.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+    document.getElementById('cupid1').innerHTML = '<option value="">Select person</option>' + opts;
+    document.getElementById('cupid2').innerHTML = '<option value="">Select person</option>' + opts;
+    renderCupidList();
+}
 
-// Step 5: Keep Apart
+function addCupidMatch() {
+    const id1 = parseInt(document.getElementById('cupid1').value);
+    const id2 = parseInt(document.getElementById('cupid2').value);
+    
+    if (isNaN(id1) || isNaN(id2)) return alert('Select both people');
+    if (id1 === id2) return alert('Must be different people');
+    
+    // Check if they're already a couple
+    const isCouple = state.couples.some(p => 
+        (p[0] === id1 && p[1] === id2) || (p[0] === id2 && p[1] === id1)
+    );
+    if (isCouple) return alert('They are already a couple!');
+    
+    // Check if they're best friends
+    const areBF = state.bestFriends.some(p => 
+        (p[0] === id1 && p[1] === id2) || (p[0] === id2 && p[1] === id1)
+    );
+    if (areBF) return alert('They are already best friends!');
+    
+    // Check if already matched
+    const exists = state.cupidMatches.some(p => 
+        (p[0] === id1 && p[1] === id2) || (p[0] === id2 && p[1] === id1)
+    );
+    if (exists) return alert('Already matched!');
+    
+    state.cupidMatches.push([id1, id2]);
+    renderCupidList();
+    document.getElementById('cupid1').value = '';
+    document.getElementById('cupid2').value = '';
+}
+
+function removeCupidMatch(idx) {
+    state.cupidMatches.splice(idx, 1);
+    renderCupidList();
+}
+
+function renderCupidList() {
+    const list = document.getElementById('cupidList');
+    if (state.cupidMatches.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:#795548;padding:20px">No matches yet 💘</p>';
+        return;
+    }
+    list.innerHTML = state.cupidMatches.map((p, idx) => `
+        <div class="guest-item">
+            <span>${state.guests[p[0]]} 💘 ${state.guests[p[1]]}</span>
+            <button class="remove-btn" onclick="removeCupidMatch(${idx})">×</button>
+        </div>
+    `).join('');
+}
+
+// Step 6: Keep Apart
 function populateKeepApart() {
     const opts = state.guests.map((n, i) => `<option value="${i}">${n}</option>`).join('');
     document.getElementById('apart1').innerHTML = '<option value="">Select</option>' + opts;
@@ -245,6 +331,12 @@ function addKeepApart() {
     
     if (isNaN(id1) || isNaN(id2)) return alert('Select both');
     if (id1 === id2) return alert('Must be different');
+    
+    // Check if they're a cupid match
+    const isCupidMatch = state.cupidMatches.some(p => 
+        (p[0] === id1 && p[1] === id2) || (p[0] === id2 && p[1] === id1)
+    );
+    if (isCupidMatch) return alert('Warning: These people are matched in Play Cupid! Remove from there first.');
     
     const exists = state.keepApart.some(p => 
         (p[0] === id1 && p[1] === id2) || (p[0] === id2 && p[1] === id1)
@@ -311,6 +403,7 @@ function renderOutsiders() {
             <div class="outsider">
                 <div class="outsider-name">${state.guests[id]}</div>
                 <div class="outsider-selects">
+                    <div class="connection-label">Connection 1</div>
                     <div class="outsider-row">
                         <select class="input-medium" data-person="${id}" data-conn="0">
                             <option value="">Who do they know?</option>
@@ -322,6 +415,10 @@ function renderOutsiders() {
                             <option value="acquaintance">Acquaintance</option>
                         </select>
                     </div>
+                    
+                    <div class="connection-separator"></div>
+                    
+                    <div class="connection-label">Connection 2 (optional)</div>
                     <div class="outsider-row">
                         <select class="input-medium" data-person="${id}" data-conn="1">
                             <option value="">Who else?</option>
@@ -341,7 +438,7 @@ function renderOutsiders() {
     document.getElementById('outsidersList').innerHTML = html;
 }
 
-// Step 7: Generate
+// Step 8: Generate
 function generate() {
     // Collect outsider relationships
     state.relationships = {};
@@ -365,6 +462,7 @@ function generate() {
         state.guests.length,
         state.couples,
         state.bestFriends,
+        state.cupidMatches,
         state.keepApart,
         state.introverts,
         state.relationships,

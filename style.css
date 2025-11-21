@@ -357,6 +357,7 @@ h3 {
 }
 
 .slot-pair:has(.slot.filled:first-child):has(.slot.filled:last-child)::before {
+    content: '❤️';
     font-size: 20px;
 }
 
@@ -372,6 +373,27 @@ h3 {
     transition: all 0.3s;
     font-size: 24px;
     color: var(--brown-300);
+    position: relative;
+    cursor: pointer;
+}
+
+.drag-hint {
+    background: var(--brown-700);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeInOut 2s ease-in-out;
+    z-index: 10;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(5px); }
+    10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
 }
 
 .slot.drag-over {
@@ -483,13 +505,30 @@ h3 {
 .outsider-name {
     font-size: 20px;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+    color: var(--brown-900);
 }
 
 .outsider-selects {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.connection-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brown-700);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+.connection-separator {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--brown-300), transparent);
+    margin: 12px 0;
 }
 
 .outsider-row {

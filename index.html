@@ -21,7 +21,7 @@
                     <p>Balance comfort with new connections</p>
                 </div>
                 <div class="feature">
-                    <div class="feature-icon">🫂</div>
+                    <div class="feature-icon">💕</div>
                     <h3>Smart Pairing</h3>
                     <p>Keep couples close, friends distributed</p>
                 </div>
@@ -119,7 +119,30 @@
         </div>
     </div>
 
-    <!-- Step 5: Keep Apart -->
+    <!-- Step 5: Play Cupid -->
+    <div id="cupid" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Play Cupid 💘</h2>
+            <p class="subtitle">Know two people who might hit it off? Seat them close! Perfect for potential crushes or people you'd like to introduce.</p>
+            
+            <div class="select-row">
+                <select id="cupid1" class="input-medium"></select>
+                <span>💘</span>
+                <select id="cupid2" class="input-medium"></select>
+                <button class="btn-secondary" onclick="addCupidMatch()">Match</button>
+            </div>
+            
+            <div id="cupidList"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goToStep('build-groups')">Back</button>
+                <button class="btn-primary" onclick="goToStep('keep-apart')">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Keep Apart -->
     <div id="keep-apart" class="screen">
         <div class="container">
             <div class="header-small">🪑 TableSitter</div>
@@ -136,13 +159,13 @@
             <div id="apartList"></div>
             
             <div class="button-group">
-                <button class="btn-secondary" onclick="goToStep('build-groups')">Back</button>
+                <button class="btn-secondary" onclick="goToStep('cupid')">Back</button>
                 <button class="btn-primary" onclick="checkOutsiders()">Next</button>
             </div>
         </div>
     </div>
 
-    <!-- Step 6: Outsiders -->
+    <!-- Step 7: Outsiders -->
     <div id="outsiders" class="screen">
         <div class="container">
             <div class="header-small">🪑 TableSitter</div>
@@ -158,7 +181,7 @@
         </div>
     </div>
 
-    <!-- Step 7: Results -->
+    <!-- Step 8: Results -->
     <div id="results" class="screen">
         <div class="container-wide">
             <div class="header-small">🪑 TableSitter</div>
