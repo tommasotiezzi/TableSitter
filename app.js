@@ -192,34 +192,44 @@ function emptySlot(btn, guestId) {
 function finishGroups() {
     // Extract couples
     state.couples = [];
-    const couplePairs = {};
-    document.querySelectorAll('#coupleSlots .slot.filled').forEach(slot => {
-        const pair = slot.parentElement;
-        const pairIdx = Array.from(pair.parentElement.children).indexOf(pair);
-        const guestId = parseInt(slot.querySelector('[data-guest]').dataset.guest);
-        if (!couplePairs[pairIdx]) couplePairs[pairIdx] = [];
-        couplePairs[pairIdx].push(guestId);
-    });
-    Object.values(couplePairs).forEach(p => {
-        if (p.length === 2) state.couples.push(p);
+    const couplePairDivs = document.querySelectorAll('#coupleSlots .slot-pair');
+    couplePairDivs.forEach(pairDiv => {
+        const slots = pairDiv.querySelectorAll('.slot.filled');
+        if (slots.length === 2) {
+            const ids = Array.from(slots).map(s => {
+                const guest = s.querySelector('[data-guest]');
+                return guest ? parseInt(guest.dataset.guest) : null;
+            }).filter(id => id !== null);
+            
+            if (ids.length === 2) {
+                state.couples.push(ids);
+            }
+        }
     });
     
     // Extract best friends
     state.bestFriends = [];
-    const bfPairs = {};
-    document.querySelectorAll('#bfSlots .slot.filled').forEach(slot => {
-        const pair = slot.parentElement;
-        const pairIdx = Array.from(pair.parentElement.children).indexOf(pair);
-        const guestId = parseInt(slot.querySelector('[data-guest]').dataset.guest);
-        if (!bfPairs[pairIdx]) bfPairs[pairIdx] = [];
-        bfPairs[pairIdx].push(guestId);
+    const bfPairDivs = document.querySelectorAll('#bfSlots .slot-pair');
+    bfPairDivs.forEach(pairDiv => {
+        const slots = pairDiv.querySelectorAll('.slot.filled');
+        if (slots.length === 2) {
+            const ids = Array.from(slots).map(s => {
+                const guest = s.querySelector('[data-guest]');
+                return guest ? parseInt(guest.dataset.guest) : null;
+            }).filter(id => id !== null);
+            
+            if (ids.length === 2) {
+                state.bestFriends.push(ids);
+            }
+        }
     });
-    Object.values(bfPairs).forEach(p => {
-        if (p.length === 2) state.bestFriends.push(p);
-    });
+    
+    console.log('Couples:', state.couples);
+    console.log('Best Friends:', state.bestFriends);
     
     goToStep('keep-apart');
 }
+
 
 // Step 5: Keep Apart
 function populateKeepApart() {
@@ -272,9 +282,14 @@ function checkOutsiders() {
     state.couples.forEach(p => { inGroups.add(p[0]); inGroups.add(p[1]); });
     state.bestFriends.forEach(p => { inGroups.add(p[0]); inGroups.add(p[1]); });
     
+    console.log('In groups:', Array.from(inGroups).map(i => state.guests[i]));
+    
     state.outsiders = [];
-    state.guests.forEach((_, idx) => {
-        if (!inGroups.has(idx)) state.outsiders.push(idx);
+    state.guests.forEach((name, idx) => {
+        if (!inGroups.has(idx)) {
+            state.outsiders.push(idx);
+            console.log('Outsider:', name);
+        }
     });
     
     if (state.outsiders.length === 0) {

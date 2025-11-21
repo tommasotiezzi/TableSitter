@@ -9,6 +9,7 @@
     --brown-700: #5D4037;
     --brown-500: #795548;
     --brown-300: #A1887F;
+    --brown-200: #BCAAA4;
     --brown-100: #D7CCC8;
     --brown-50: #EFEBE9;
     --cream: #FFF8F0;
@@ -317,18 +318,47 @@ h3 {
 
 .slots {
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    flex-direction: column;
+    gap: 12px;
     min-height: 100px;
     padding: 20px;
     background: var(--brown-50);
     border-radius: 12px;
-    justify-content: center;
 }
 
 .slot-pair {
     display: flex;
-    gap: 12px;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--white);
+    border-radius: 12px;
+    border: 2px solid var(--brown-100);
+    position: relative;
+}
+
+.slot-pair::before {
+    content: '+';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    color: var(--brown-200);
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.slot-pair:has(.slot.filled:first-child):has(.slot.filled:last-child) {
+    border-color: var(--brown-500);
+    background: linear-gradient(135deg, var(--brown-50), var(--white));
+}
+
+.slot-pair:has(.slot.filled:first-child):has(.slot.filled:last-child)::before {
+    content: '❤️';
+    font-size: 20px;
 }
 
 .slot {
