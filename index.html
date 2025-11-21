@@ -97,53 +97,57 @@
         </div>
     </div>
 
-    <!-- Step 4: Couples -->
-    <div id="couples" class="screen">
-        <div class="container">
+    <!-- Step 4: Build Groups -->
+    <div id="build-groups" class="screen">
+        <div class="container-wide">
             <div class="header-small">🪑 TableSitter</div>
-            <h2>Any couples or partners?</h2>
-            <p class="step-subtitle">Mark people who should sit close (max 1 seat apart)</p>
+            <h2>Build your groups</h2>
+            <p class="step-subtitle">Drag guests into couples or best friend pairs</p>
             
-            <div class="couple-input">
-                <select id="couple1" class="input-medium"></select>
-                <span class="couple-connector">+</span>
-                <select id="couple2" class="input-medium"></select>
-                <button class="btn-secondary" onclick="app.addCouple()">Add Couple</button>
+            <!-- Couples Section -->
+            <div class="group-section">
+                <h3 class="group-title">Couples</h3>
+                <div class="slots-container" id="coupleSlotsContainer">
+                    <div class="slot-pair">
+                        <div class="drop-slot" data-group="couple" data-pair="0" data-position="0">
+                            <span class="slot-placeholder">+</span>
+                        </div>
+                        <div class="drop-slot" data-group="couple" data-pair="0" data-position="1">
+                            <span class="slot-placeholder">+</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
-            <div id="coupleList" class="couple-list"></div>
+            <!-- Best Friends Section -->
+            <div class="group-section">
+                <h3 class="group-title">Best Friends</h3>
+                <div class="slots-container" id="bestFriendSlotsContainer">
+                    <div class="slot-pair">
+                        <div class="drop-slot" data-group="bestfriend" data-pair="0" data-position="0">
+                            <span class="slot-placeholder">+</span>
+                        </div>
+                        <div class="drop-slot" data-group="bestfriend" data-pair="0" data-position="1">
+                            <span class="slot-placeholder">+</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Available Guests -->
+            <div class="group-section">
+                <h3 class="group-title">Available Guests</h3>
+                <div class="guest-cards" id="guestCards"></div>
+            </div>
             
             <div class="button-group">
-                <button class="btn-secondary" onclick="app.goToStep('guest-names')">Back</button>
-                <button class="btn-primary" onclick="app.goToStep('best-friends')">Next</button>
+                <button class="btn-secondary" onclick="app.goToStep('table-layout')">Back</button>
+                <button class="btn-primary" onclick="app.finishGroups()">Next</button>
             </div>
         </div>
     </div>
 
-    <!-- Step 5: Best Friends -->
-    <div id="best-friends" class="screen">
-        <div class="container">
-            <div class="header-small">🪑 TableSitter</div>
-            <h2>Mark best friends</h2>
-            <p class="step-subtitle">Couples are automatically best friends. Add any other best friend pairs.</p>
-            
-            <div class="couple-input">
-                <select id="bestfriend1" class="input-medium"></select>
-                <span class="couple-connector">+</span>
-                <select id="bestfriend2" class="input-medium"></select>
-                <button class="btn-secondary" onclick="app.addBestFriend()">Add Best Friends</button>
-            </div>
-            
-            <div id="bestFriendList" class="couple-list"></div>
-            
-            <div class="button-group">
-                <button class="btn-secondary" onclick="app.goToStep('couples')">Back</button>
-                <button class="btn-primary" onclick="app.goToStep('keep-apart')">Next</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 6: Keep Apart -->
+    <!-- Step 5: Keep Apart -->
     <div id="keep-apart" class="screen">
         <div class="container">
             <div class="header-small">🪑 TableSitter</div>
@@ -160,29 +164,24 @@
             <div id="keepApartList" class="couple-list"></div>
             
             <div class="button-group">
-                <button class="btn-secondary" onclick="app.goToStep('best-friends')">Back</button>
-                <button class="btn-primary" onclick="app.startRelationships()">Next</button>
+                <button class="btn-secondary" onclick="app.goToStep('build-groups')">Back</button>
+                <button class="btn-primary" onclick="app.checkOutsiders()">Next</button>
             </div>
         </div>
     </div>
 
-    <!-- Step 7: Relationships -->
-    <div id="relationships" class="screen">
+    <!-- Step 6: Connect Outsiders -->
+    <div id="connect-outsiders" class="screen">
         <div class="container">
             <div class="header-small">🪑 TableSitter</div>
-            <h2 id="relationshipTitle">Who does [Name] know?</h2>
-            <p class="step-subtitle">Select up to 2 people and their relationship level</p>
+            <h2 id="outsiderTitle">Connect the outsiders</h2>
+            <p class="step-subtitle" id="outsiderSubtitle">These guests aren't in any group yet. Who do they know best?</p>
             
-            <div class="progress-bar">
-                <div id="progressFill" class="progress-fill"></div>
-            </div>
-            <p class="progress-text"><span id="currentPerson">1</span> of <span id="totalPersons">0</span></p>
-            
-            <div id="relationshipOptions" class="relationship-options"></div>
+            <div id="outsidersList" class="outsiders-list"></div>
             
             <div class="button-group">
-                <button class="btn-secondary" onclick="app.previousPerson()" id="prevBtn">Previous</button>
-                <button class="btn-primary" onclick="app.nextPerson()" id="nextBtn">Next</button>
+                <button class="btn-secondary" onclick="app.goToStep('keep-apart')">Back</button>
+                <button class="btn-primary" onclick="app.generateSeating()">Generate Seating</button>
             </div>
         </div>
     </div>

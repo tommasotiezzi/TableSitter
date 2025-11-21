@@ -7,6 +7,7 @@ const app = {
         couples: [],
         bestFriends: [], // separate from couples
         keepApart: [],
+        outsiders: [], // people not in couples/bestFriends
         relationships: {},
         currentPersonIndex: 0
     },
@@ -15,15 +16,9 @@ const app = {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(stepId).classList.add('active');
         
-        // Populate couple dropdowns when entering couples step
-        if (stepId === 'couples') {
-            this.populateCoupleSelects();
-        }
-        
-        // Populate best friends dropdowns and render list
-        if (stepId === 'best-friends') {
-            this.populateBestFriendSelects();
-            this.renderBestFriendList();
+        // Initialize build groups when entering
+        if (stepId === 'build-groups') {
+            this.initBuildGroups();
         }
         
         // Populate keep apart dropdowns
@@ -122,163 +117,194 @@ const app = {
         btn.disabled = this.data.guests.length !== this.data.guestCount;
     },
 
-    populateCoupleSelects() {
-        const select1 = document.getElementById('couple1');
-        const select2 = document.getElementById('couple2');
-        
-        const options = this.data.guests.map((name, i) => 
-            `<option value="${i}">${name}</option>`
-        ).join('');
-        
-        select1.innerHTML = '<option value="">Select person</option>' + options;
-        select2.innerHTML = '<option value="">Select person</option>' + options;
+    // Build Groups - Drag & Drop
+    initBuildGroups() {
+        this.renderGuestCards();
+        this.initDragAndDrop();
     },
 
-    addCouple() {
-        const idx1 = parseInt(document.getElementById('couple1').value);
-        const idx2 = parseInt(document.getElementById('couple2').value);
-        
-        if (isNaN(idx1) || isNaN(idx2)) {
-            alert('Please select both people');
-            return;
-        }
-        
-        if (idx1 === idx2) {
-            alert('Please select two different people');
-            return;
-        }
-        
-        // Check if already exists
-        const exists = this.data.couples.some(couple => 
-            (couple[0] === idx1 && couple[1] === idx2) || 
-            (couple[0] === idx2 && couple[1] === idx1)
-        );
-        
-        if (exists) {
-            alert('This couple already exists');
-            return;
-        }
-        
-        this.data.couples.push([idx1, idx2]);
-        this.renderCoupleList();
-        
-        // Reset selects
-        document.getElementById('couple1').value = '';
-        document.getElementById('couple2').value = '';
+    renderGuestCards() {
+        const container = document.getElementById('guestCards');
+        container.innerHTML = this.data.guests.map((name, idx) => {
+            const abbreviation = name.substring(0, 3).toUpperCase();
+            return `
+                <div class="guest-card" 
+                     draggable="true" 
+                     data-guest-id="${idx}"
+                     data-guest-name="${name}">
+                    ${abbreviation}
+                </div>
+            `;
+        }).join('');
     },
 
-    removeCouple(index) {
-        this.data.couples.splice(index, 1);
-        this.renderCoupleList();
+    initDragAndDrop() {
+        const cards = document.querySelectorAll('.guest-card');
+        const slots = document.querySelectorAll('.drop-slot');
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('guestId', card.dataset.guestId);
+                e.dataTransfer.setData('guestName', card.dataset.guestName);
+                card.classList.add('dragging');
+            });
+
+            card.addEventListener('dragend', (e) => {
+                card.classList.remove('dragging');
+            });
+        });
+
+        slots.forEach(slot => {
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!slot.classList.contains('filled')) {
+                    slot.classList.add('drag-over');
+                }
+            });
+
+            slot.addEventListener('dragleave', (e) => {
+                slot.classList.remove('drag-over');
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                
+                if (slot.classList.contains('filled')) return;
+                
+                const guestId = parseInt(e.dataTransfer.getData('guestId'));
+                const guestName = e.dataTransfer.getData('guestName');
+                
+                this.fillSlot(slot, guestId, guestName);
+            });
+        });
     },
 
-    renderCoupleList() {
-        const container = document.getElementById('coupleList');
+    fillSlot(slot, guestId, guestName) {
+        const abbreviation = guestName.substring(0, 3).toUpperCase();
         
-        if (this.data.couples.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--brown-500); padding: 20px;">No couples added yet</p>';
-            return;
-        }
-        
-        container.innerHTML = this.data.couples.map((couple, index) => `
-            <div class="couple-item">
-                <span>${this.data.guests[couple[0]]} + ${this.data.guests[couple[1]]}</span>
-                <button class="remove-btn" onclick="app.removeCouple(${index})">×</button>
+        slot.classList.add('filled');
+        slot.innerHTML = `
+            <div class="guest-card-in-slot">
+                ${abbreviation}
+                <button class="remove-from-slot" onclick="app.removeFromSlot(this, ${guestId})">×</button>
             </div>
-        `).join('');
+        `;
+        
+        // Hide card from available
+        const card = document.querySelector(`.guest-card[data-guest-id="${guestId}"]`);
+        if (card) card.classList.add('hidden');
+        
+        // Check if pair is complete
+        const group = slot.dataset.group;
+        const pairIndex = parseInt(slot.dataset.pair);
+        const pairSlots = document.querySelectorAll(`.drop-slot[data-group="${group}"][data-pair="${pairIndex}"]`);
+        const allFilled = Array.from(pairSlots).every(s => s.classList.contains('filled'));
+        
+        if (allFilled) {
+            // Add new empty pair
+            this.addEmptyPair(group);
+            
+            // Save the pair
+            const guestIds = Array.from(pairSlots).map(s => {
+                const cardInSlot = s.querySelector('.guest-card-in-slot');
+                return parseInt(cardInSlot.parentElement.dataset.originalGuestId || 
+                               s.dataset.guestId);
+            });
+            
+            // Store in slot for retrieval
+            pairSlots.forEach((s, i) => {
+                s.dataset.guestId = guestIds[i] || this.getGuestIdFromSlot(s);
+            });
+        }
     },
 
-    // Best Friends functions
-    populateBestFriendSelects() {
-        const select1 = document.getElementById('bestfriend1');
-        const select2 = document.getElementById('bestfriend2');
-        
-        const options = this.data.guests.map((name, i) => 
-            `<option value="${i}">${name}</option>`
-        ).join('');
-        
-        select1.innerHTML = '<option value="">Select person</option>' + options;
-        select2.innerHTML = '<option value="">Select person</option>' + options;
-    },
-
-    addBestFriend() {
-        const idx1 = parseInt(document.getElementById('bestfriend1').value);
-        const idx2 = parseInt(document.getElementById('bestfriend2').value);
-        
-        if (isNaN(idx1) || isNaN(idx2)) {
-            alert('Please select both people');
-            return;
-        }
-        
-        if (idx1 === idx2) {
-            alert('Please select two different people');
-            return;
-        }
-        
-        // Check if already exists in couples
-        const existsInCouples = this.data.couples.some(couple => 
-            (couple[0] === idx1 && couple[1] === idx2) || 
-            (couple[0] === idx2 && couple[1] === idx1)
+    getGuestIdFromSlot(slot) {
+        const abbrev = slot.querySelector('.guest-card-in-slot')?.textContent.trim().replace('×', '');
+        return this.data.guests.findIndex(name => 
+            name.substring(0, 3).toUpperCase() === abbrev
         );
-        
-        if (existsInCouples) {
-            alert('This pair is already marked as a couple (automatically best friends)');
-            return;
-        }
-        
-        // Check if already exists in best friends
-        const exists = this.data.bestFriends.some(pair => 
-            (pair[0] === idx1 && pair[1] === idx2) || 
-            (pair[0] === idx2 && pair[1] === idx1)
-        );
-        
-        if (exists) {
-            alert('This pair is already marked as best friends');
-            return;
-        }
-        
-        this.data.bestFriends.push([idx1, idx2]);
-        this.renderBestFriendList();
-        
-        // Reset selects
-        document.getElementById('bestfriend1').value = '';
-        document.getElementById('bestfriend2').value = '';
     },
 
-    removeBestFriend(index) {
-        this.data.bestFriends.splice(index, 1);
-        this.renderBestFriendList();
+    removeFromSlot(button, guestId) {
+        const slot = button.closest('.drop-slot');
+        slot.classList.remove('filled');
+        slot.innerHTML = '<span class="slot-placeholder">+</span>';
+        delete slot.dataset.guestId;
+        
+        // Show card again
+        const card = document.querySelector(`.guest-card[data-guest-id="${guestId}"]`);
+        if (card) card.classList.remove('hidden');
     },
 
-    renderBestFriendList() {
-        const container = document.getElementById('bestFriendList');
+    addEmptyPair(group) {
+        const container = group === 'couple' ? 
+            document.getElementById('coupleSlotsContainer') : 
+            document.getElementById('bestFriendSlotsContainer');
         
-        let html = '';
+        const currentPairs = container.querySelectorAll('.slot-pair').length;
         
-        // Show couples (checked, disabled)
-        if (this.data.couples.length > 0) {
-            html += this.data.couples.map(couple => `
-                <div class="couple-item couple-item-disabled">
-                    <span>✓ ${this.data.guests[couple[0]]} + ${this.data.guests[couple[1]]} <small>(couple)</small></span>
-                </div>
-            `).join('');
-        }
+        const newPair = document.createElement('div');
+        newPair.className = 'slot-pair';
+        newPair.innerHTML = `
+            <div class="drop-slot" data-group="${group}" data-pair="${currentPairs}" data-position="0">
+                <span class="slot-placeholder">+</span>
+            </div>
+            <div class="drop-slot" data-group="${group}" data-pair="${currentPairs}" data-position="1">
+                <span class="slot-placeholder">+</span>
+            </div>
+        `;
         
-        // Show best friends (removable)
-        if (this.data.bestFriends.length > 0) {
-            html += this.data.bestFriends.map((pair, index) => `
-                <div class="couple-item">
-                    <span>${this.data.guests[pair[0]]} + ${this.data.guests[pair[1]]}</span>
-                    <button class="remove-btn" onclick="app.removeBestFriend(${index})">×</button>
-                </div>
-            `).join('');
-        }
+        container.appendChild(newPair);
         
-        if (html === '') {
-            html = '<p style="text-align: center; color: var(--brown-500); padding: 20px;">No best friends added yet</p>';
-        }
+        // Re-init drag and drop for new slots
+        this.initDragAndDrop();
+    },
+
+    finishGroups() {
+        // Extract couples
+        this.data.couples = [];
+        const coupleSlots = document.querySelectorAll('.drop-slot[data-group="couple"]');
+        const couplePairs = {};
         
-        container.innerHTML = html;
+        coupleSlots.forEach(slot => {
+            if (slot.classList.contains('filled')) {
+                const pairIndex = slot.dataset.pair;
+                const guestId = this.getGuestIdFromSlot(slot);
+                
+                if (!couplePairs[pairIndex]) couplePairs[pairIndex] = [];
+                couplePairs[pairIndex].push(guestId);
+            }
+        });
+        
+        Object.values(couplePairs).forEach(pair => {
+            if (pair.length === 2) {
+                this.data.couples.push(pair);
+            }
+        });
+        
+        // Extract best friends
+        this.data.bestFriends = [];
+        const bfSlots = document.querySelectorAll('.drop-slot[data-group="bestfriend"]');
+        const bfPairs = {};
+        
+        bfSlots.forEach(slot => {
+            if (slot.classList.contains('filled')) {
+                const pairIndex = slot.dataset.pair;
+                const guestId = this.getGuestIdFromSlot(slot);
+                
+                if (!bfPairs[pairIndex]) bfPairs[pairIndex] = [];
+                bfPairs[pairIndex].push(guestId);
+            }
+        });
+        
+        Object.values(bfPairs).forEach(pair => {
+            if (pair.length === 2) {
+                this.data.bestFriends.push(pair);
+            }
+        });
+        
+        this.goToStep('keep-apart');
     },
 
     // Keep Apart functions
@@ -348,142 +374,121 @@ const app = {
         `).join('');
     },
 
-    startRelationships() {
-        this.data.currentPersonIndex = 0;
-        this.data.relationships = {};
+    // Outsiders - Connect people not in groups
+    checkOutsiders() {
+        // Find people not in couples or best friends
+        const inGroups = new Set();
+        this.data.couples.forEach(pair => {
+            inGroups.add(pair[0]);
+            inGroups.add(pair[1]);
+        });
+        this.data.bestFriends.forEach(pair => {
+            inGroups.add(pair[0]);
+            inGroups.add(pair[1]);
+        });
         
-        // Initialize relationships for all guests
+        const outsiders = [];
+        this.data.guests.forEach((name, idx) => {
+            if (!inGroups.has(idx)) {
+                outsiders.push(idx);
+            }
+        });
+        
+        if (outsiders.length === 0) {
+            // No outsiders, skip to generation
+            this.generateSeating();
+        } else {
+            // Show outsiders step
+            this.data.outsiders = outsiders;
+            this.renderOutsiders();
+            this.goToStep('connect-outsiders');
+        }
+    },
+
+    renderOutsiders() {
+        const container = document.getElementById('outsidersList');
+        const peopleInGroups = [];
+        
+        // Get all people in groups for selection
+        this.data.couples.forEach(pair => {
+            pair.forEach(id => {
+                if (!peopleInGroups.includes(id)) {
+                    peopleInGroups.push(id);
+                }
+            });
+        });
+        this.data.bestFriends.forEach(pair => {
+            pair.forEach(id => {
+                if (!peopleInGroups.includes(id)) {
+                    peopleInGroups.push(id);
+                }
+            });
+        });
+        
+        container.innerHTML = this.data.outsiders.map(outsiderId => {
+            const outsiderName = this.data.guests[outsiderId];
+            const options = peopleInGroups.map(id => 
+                `<option value="${id}">${this.data.guests[id]}</option>`
+            ).join('');
+            
+            return `
+                <div class="outsider-item">
+                    <div class="outsider-name">${outsiderName}</div>
+                    <div class="outsider-connections" id="connections_${outsiderId}">
+                        <div class="connection-row">
+                            <select class="input-medium" id="outsider_person_${outsiderId}_0">
+                                <option value="">Who do they know?</option>
+                                ${options}
+                            </select>
+                            <select class="input-medium" id="outsider_level_${outsiderId}_0">
+                                <option value="close_friend">Close Friend</option>
+                                <option value="friend" selected>Friend</option>
+                                <option value="acquaintance">Acquaintance</option>
+                            </select>
+                        </div>
+                        <div class="connection-row">
+                            <select class="input-medium" id="outsider_person_${outsiderId}_1">
+                                <option value="">Who else?</option>
+                                ${options}
+                            </select>
+                            <select class="input-medium" id="outsider_level_${outsiderId}_1">
+                                <option value="close_friend">Close Friend</option>
+                                <option value="friend" selected>Friend</option>
+                                <option value="acquaintance">Acquaintance</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    generateSeating() {
+        // Collect outsider relationships
+        this.data.relationships = {};
         this.data.guests.forEach((_, i) => {
             this.data.relationships[i] = [];
         });
         
-        this.goToStep('relationships');
-        this.renderRelationshipStep();
-    },
-
-    renderRelationshipStep() {
-        const currentIdx = this.data.currentPersonIndex;
-        const currentName = this.data.guests[currentIdx];
-        
-        document.getElementById('relationshipTitle').textContent = `Who does ${currentName} know?`;
-        document.getElementById('currentPerson').textContent = currentIdx + 1;
-        document.getElementById('totalPersons').textContent = this.data.guests.length;
-        
-        // Update progress bar
-        const progress = ((currentIdx + 1) / this.data.guests.length) * 100;
-        document.getElementById('progressFill').style.width = progress + '%';
-        
-        // Build list of excluded people (partner and best friends)
-        let excludedIndices = [currentIdx];
-        
-        // Check if current person is in a couple
-        this.data.couples.forEach(couple => {
-            if (couple[0] === currentIdx) excludedIndices.push(couple[1]);
-            if (couple[1] === currentIdx) excludedIndices.push(couple[0]);
-        });
-        
-        // Check if current person has best friends
-        this.data.bestFriends.forEach(pair => {
-            if (pair[0] === currentIdx) excludedIndices.push(pair[1]);
-            if (pair[1] === currentIdx) excludedIndices.push(pair[0]);
-        });
-        
-        const container = document.getElementById('relationshipOptions');
-        const currentRels = this.data.relationships[currentIdx] || [];
-        
-        container.innerHTML = this.data.guests.map((name, idx) => {
-            if (excludedIndices.includes(idx)) return '';
-            
-            const existing = currentRels.find(r => r.person === idx);
-            const isChecked = existing ? 'checked' : '';
-            const relType = existing ? existing.type : 'friend';
-            const isDisabled = !existing && currentRels.length >= 2;
-            
-            return `
-                <div class="relationship-item ${isDisabled ? 'disabled' : ''}">
-                    <input type="checkbox" 
-                           id="rel_${idx}" 
-                           ${isChecked} 
-                           ${isDisabled ? 'disabled' : ''}
-                           onchange="app.toggleRelationship(${idx})">
-                    <label for="rel_${idx}">${name}</label>
-                    <select id="type_${idx}" 
-                            ${!existing ? 'disabled' : ''}
-                            onchange="app.updateRelationshipType(${idx})">
-                        <option value="close_friend" ${relType === 'close_friend' ? 'selected' : ''}>Close Friend</option>
-                        <option value="friend" ${relType === 'friend' ? 'selected' : ''}>Friend</option>
-                        <option value="acquaintance" ${relType === 'acquaintance' ? 'selected' : ''}>Acquaintance</option>
-                        <option value="know_by_sight" ${relType === 'know_by_sight' ? 'selected' : ''}>Know by Sight</option>
-                    </select>
-                </div>
-            `;
-        }).join('');
-        
-        // Update button states
-        document.getElementById('prevBtn').disabled = currentIdx === 0;
-        const nextBtn = document.getElementById('nextBtn');
-        if (currentIdx === this.data.guests.length - 1) {
-            nextBtn.textContent = 'Generate Seating';
-            nextBtn.onclick = () => this.generateSeating();
-        } else {
-            nextBtn.textContent = 'Next';
-            nextBtn.onclick = () => this.nextPerson();
-        }
-    },
-
-    toggleRelationship(personIdx) {
-        const currentIdx = this.data.currentPersonIndex;
-        const checkbox = document.getElementById(`rel_${personIdx}`);
-        const select = document.getElementById(`type_${personIdx}`);
-        const currentRels = this.data.relationships[currentIdx];
-        
-        if (checkbox.checked) {
-            if (currentRels.length >= 2) {
-                checkbox.checked = false;
-                alert('You can only select up to 2 relationships per person');
-                return;
-            }
-            currentRels.push({
-                person: personIdx,
-                type: select.value
+        if (this.data.outsiders) {
+            this.data.outsiders.forEach(outsiderId => {
+                for (let i = 0; i < 2; i++) {
+                    const personSelect = document.getElementById(`outsider_person_${outsiderId}_${i}`);
+                    const levelSelect = document.getElementById(`outsider_level_${outsiderId}_${i}`);
+                    
+                    if (personSelect && personSelect.value) {
+                        const personId = parseInt(personSelect.value);
+                        const level = levelSelect.value;
+                        
+                        this.data.relationships[outsiderId].push({
+                            person: personId,
+                            type: level
+                        });
+                    }
+                }
             });
-            select.disabled = false;
-        } else {
-            const idx = currentRels.findIndex(r => r.person === personIdx);
-            if (idx !== -1) {
-                currentRels.splice(idx, 1);
-            }
-            select.disabled = true;
         }
         
-        this.renderRelationshipStep();
-    },
-
-    updateRelationshipType(personIdx) {
-        const currentIdx = this.data.currentPersonIndex;
-        const select = document.getElementById(`type_${personIdx}`);
-        const rel = this.data.relationships[currentIdx].find(r => r.person === personIdx);
-        
-        if (rel) {
-            rel.type = select.value;
-        }
-    },
-
-    nextPerson() {
-        if (this.data.currentPersonIndex < this.data.guests.length - 1) {
-            this.data.currentPersonIndex++;
-            this.renderRelationshipStep();
-        }
-    },
-
-    previousPerson() {
-        if (this.data.currentPersonIndex > 0) {
-            this.data.currentPersonIndex--;
-            this.renderRelationshipStep();
-        }
-    },
-
-    generateSeating() {
         const arrangement = seatingAlgorithm.generate(
             this.data.guests.length,
             this.data.couples,
@@ -587,6 +592,7 @@ const app = {
             couples: [],
             bestFriends: [],
             keepApart: [],
+            outsiders: [],
             relationships: {},
             currentPersonIndex: 0
         };
