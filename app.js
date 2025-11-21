@@ -14,7 +14,12 @@ const app = {
 
     goToStep(stepId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(stepId).classList.add('active');
+        const targetStep = document.getElementById(stepId);
+        if (!targetStep) {
+            console.error('Step not found:', stepId);
+            return;
+        }
+        targetStep.classList.add('active');
         
         // Initialize build groups when entering
         if (stepId === 'build-groups') {
