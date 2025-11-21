@@ -301,42 +301,42 @@ function checkOutsiders() {
 }
 
 function renderOutsiders() {
-    const peopleInGroups = [...new Set([
-        ...state.couples.flat(),
-        ...state.bestFriends.flat()
-    ])];
-    
-    const opts = peopleInGroups.map(i => `<option value="${i}">${state.guests[i]}</option>`).join('');
-    
-    const html = state.outsiders.map(id => `
-        <div class="outsider">
-            <div class="outsider-name">${state.guests[id]}</div>
-            <div class="outsider-selects">
-                <div class="outsider-row">
-                    <select class="input-medium" data-person="${id}" data-conn="0">
-                        <option value="">Who do they know?</option>
-                        ${opts}
-                    </select>
-                    <select class="input-medium" data-person="${id}" data-level="0">
-                        <option value="close_friend">Close Friend</option>
-                        <option value="friend" selected>Friend</option>
-                        <option value="acquaintance">Acquaintance</option>
-                    </select>
-                </div>
-                <div class="outsider-row">
-                    <select class="input-medium" data-person="${id}" data-conn="1">
-                        <option value="">Who else?</option>
-                        ${opts}
-                    </select>
-                    <select class="input-medium" data-person="${id}" data-level="1">
-                        <option value="close_friend">Close Friend</option>
-                        <option value="friend" selected>Friend</option>
-                        <option value="acquaintance">Acquaintance</option>
-                    </select>
+    const html = state.outsiders.map(id => {
+        // Show all guests except this outsider themselves
+        const opts = state.guests
+            .map((name, idx) => idx !== id ? `<option value="${idx}">${name}</option>` : '')
+            .join('');
+        
+        return `
+            <div class="outsider">
+                <div class="outsider-name">${state.guests[id]}</div>
+                <div class="outsider-selects">
+                    <div class="outsider-row">
+                        <select class="input-medium" data-person="${id}" data-conn="0">
+                            <option value="">Who do they know?</option>
+                            ${opts}
+                        </select>
+                        <select class="input-medium" data-person="${id}" data-level="0">
+                            <option value="close_friend">Close Friend</option>
+                            <option value="friend" selected>Friend</option>
+                            <option value="acquaintance">Acquaintance</option>
+                        </select>
+                    </div>
+                    <div class="outsider-row">
+                        <select class="input-medium" data-person="${id}" data-conn="1">
+                            <option value="">Who else?</option>
+                            ${opts}
+                        </select>
+                        <select class="input-medium" data-person="${id}" data-level="1">
+                            <option value="close_friend">Close Friend</option>
+                            <option value="friend" selected>Friend</option>
+                            <option value="acquaintance">Acquaintance</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     document.getElementById('outsidersList').innerHTML = html;
 }
