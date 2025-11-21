@@ -281,6 +281,22 @@ h2 {
 }
 
 /* Guest Names */
+.guest-counter {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--brown-700);
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--brown-50);
+    border-radius: 12px;
+}
+
+.guest-counter #guestCounter {
+    font-size: 28px;
+    color: var(--brown-900);
+}
+
 .name-input-container {
     display: flex;
     gap: 12px;

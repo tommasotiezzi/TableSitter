@@ -11,6 +11,11 @@ const app = {
     goToStep(stepId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(stepId).classList.add('active');
+        
+        // Populate couple dropdowns when entering couples step
+        if (stepId === 'couples') {
+            this.populateCoupleSelects();
+        }
     },
 
     setGuestCount() {
@@ -20,6 +25,11 @@ const app = {
             return;
         }
         this.data.guestCount = count;
+        
+        // Initialize counter display
+        document.getElementById('guestTotal').textContent = count;
+        document.getElementById('guestCounter').textContent = '0';
+        
         this.goToStep('table-layout');
     },
 
@@ -77,6 +87,9 @@ const app = {
                 <button class="remove-btn" onclick="app.removeGuest(${index})">×</button>
             </div>
         `).join('');
+        
+        // Update counter
+        document.getElementById('guestCounter').textContent = this.data.guests.length;
     },
 
     checkNamesComplete() {
@@ -151,7 +164,6 @@ const app = {
     },
 
     startRelationships() {
-        this.populateCoupleSelects();
         this.data.currentPersonIndex = 0;
         this.data.relationships = {};
         
