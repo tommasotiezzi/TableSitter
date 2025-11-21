@@ -60,7 +60,7 @@ function checkViolations(couples, cupidMatches, bestFriends, keepApart) {
 }
 
 function placeCouples(arr, pairs, used, num, layout) {
-    couples.forEach(([p1, p2]) => {
+    pairs.forEach(([p1, p2]) => {
         let placed = false;
         
         if (layout === 'rectangular') {
