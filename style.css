@@ -301,10 +301,27 @@ h2 {
     display: flex;
     gap: 12px;
     margin-bottom: 30px;
+    align-items: center;
 }
 
-.name-input-container input {
+.name-input-container input[type="text"] {
     flex: 1;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--brown-700);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
 
 .guest-list {
@@ -326,6 +343,11 @@ h2 {
 .guest-item span {
     font-size: 16px;
     color: var(--brown-900);
+}
+
+.intro-badge {
+    font-size: 14px;
+    margin-left: 6px;
 }
 
 .remove-btn {
@@ -377,6 +399,17 @@ h2 {
 .couple-item span {
     font-size: 16px;
     color: var(--brown-900);
+}
+
+.couple-item-disabled {
+    opacity: 0.7;
+    background: var(--brown-100);
+}
+
+.couple-item small {
+    color: var(--brown-500);
+    font-size: 12px;
+    margin-left: 6px;
 }
 
 /* Relationships */
@@ -510,25 +543,169 @@ h2 {
     }
     
     h1 {
-        font-size: 32px;
+        font-size: 28px;
+    }
+    
+    h2 {
+        font-size: 26px;
+    }
+    
+    .logo {
+        font-size: 40px;
+    }
+    
+    .subtitle {
+        font-size: 16px;
     }
     
     .container, .container-wide {
-        padding: 40px 24px;
+        padding: 30px 20px;
     }
     
+    .screen {
+        padding: 20px 16px;
+    }
+    
+    /* Name input mobile */
+    .name-input-container {
+        flex-wrap: wrap;
+    }
+    
+    .name-input-container input[type="text"] {
+        width: 100%;
+        flex: none;
+    }
+    
+    .checkbox-label {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        margin-top: 8px;
+    }
+    
+    .name-input-container .btn-secondary {
+        order: 2;
+        width: 100%;
+    }
+    
+    /* Couple/relationship inputs mobile */
+    .couple-input {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .couple-input select {
+        width: 100%;
+    }
+    
+    .couple-connector {
+        display: none;
+    }
+    
+    .couple-input .btn-secondary {
+        width: 100%;
+    }
+    
+    /* Button groups */
+    .button-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .button-group button {
+        width: 100%;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        padding: 14px 32px;
+        font-size: 16px;
+    }
+    
+    /* Table display */
     .table-rectangular {
         width: 100%;
-        max-width: 400px;
+        max-width: 350px;
+        height: 150px;
     }
     
     .table-circular {
-        width: 300px;
-        height: 300px;
+        width: 280px;
+        height: 280px;
     }
     
-    .table-horseshoe {
+    .place-card {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    /* Relationship items */
+    .relationship-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .relationship-item label {
         width: 100%;
-        max-width: 350px;
+    }
+    
+    .relationship-item select {
+        width: 100%;
+    }
+    
+    .relationship-item input[type="checkbox"] {
+        margin-bottom: 8px;
+    }
+    
+    /* Guest counter */
+    .guest-counter {
+        font-size: 18px;
+    }
+    
+    .guest-counter #guestCounter {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 24px;
+    }
+    
+    h2 {
+        font-size: 22px;
+    }
+    
+    .container, .container-wide {
+        padding: 24px 16px;
+    }
+    
+    .feature h3 {
+        font-size: 16px;
+    }
+    
+    .feature p {
+        font-size: 13px;
+    }
+    
+    .input-large {
+        font-size: 20px;
+        padding: 16px;
+    }
+    
+    .table-rectangular {
+        max-width: 280px;
+        height: 120px;
+    }
+    
+    .table-circular {
+        width: 240px;
+        height: 240px;
+    }
+    
+    .place-card {
+        font-size: 11px;
+        padding: 5px 10px;
     }
 }

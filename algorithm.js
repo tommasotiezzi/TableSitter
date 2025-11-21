@@ -1,8 +1,7 @@
 const seatingAlgorithm = {
-    generate(numGuests, couples, relationships, layout) {
-        // Goal: MAXIMIZE mixing in interaction zones
-        // Rectangular: interact with left, right, and across (4-6 people)
-        // Circular: interact mainly with left and right (2 people)
+    generate(numGuests, couples, bestFriends, keepApart, introverts, relationships, layout) {
+        // Combine couples and bestFriends into one bestFriends array for algorithm
+        const allBestFriends = [...couples, ...bestFriends];
         
         const arrangement = new Array(numGuests).fill(-1);
         const used = new Array(numGuests).fill(false);
@@ -11,7 +10,7 @@ const seatingAlgorithm = {
         this.placeCouples(arrangement, couples, used, numGuests, layout);
         
         // Step 2: Fill remaining seats prioritizing maximum mixing in interaction zones
-        this.fillRemaining(arrangement, relationships, used, numGuests, layout);
+        this.fillRemaining(arrangement, allBestFriends, keepApart, introverts, relationships, used, numGuests, layout);
         
         return arrangement;
     },
@@ -92,7 +91,7 @@ const seatingAlgorithm = {
         });
     },
     
-    fillRemaining(arrangement, relationships, used, numGuests, layout) {
+    fillRemaining(arrangement, allBestFriends, keepApart, introverts, relationships, used, numGuests, layout) {
         const remaining = [];
         for (let i = 0; i < numGuests; i++) {
             if (!used[i]) {
@@ -110,7 +109,7 @@ const seatingAlgorithm = {
             
             for (let pos = 0; pos < numGuests; pos++) {
                 if (arrangement[pos] === -1) {
-                    const score = this.scorePosition(person, pos, arrangement, relationships, numGuests, layout);
+                    const score = this.scorePosition(person, pos, arrangement, allBestFriends, keepApart, introverts, relationships, numGuests, layout);
                     if (score > bestScore) {
                         bestScore = score;
                         bestPos = pos;
@@ -191,13 +190,28 @@ const seatingAlgorithm = {
         return nearby.filter(p => p >= 0 && p < numGuests);
     },
     
-    scorePosition(person, pos, arrangement, relationships, numGuests, layout) {
+    scorePosition(person, pos, arrangement, allBestFriends, keepApart, introverts, relationships, numGuests, layout) {
         // Higher score = better mixing with social bridges
         let score = 0;
         
         const personRels = relationships[person] || [];
+        const isIntrovert = introverts.includes(person);
         const interactionZone = this.getInteractionZone(pos, numGuests, layout);
         const nearbyZone = this.getNearbyZone(pos, numGuests, layout);
+        
+        // Check if person is best friends with someone
+        const personBestFriends = [];
+        allBestFriends.forEach(pair => {
+            if (pair[0] === person) personBestFriends.push(pair[1]);
+            if (pair[1] === person) personBestFriends.push(pair[0]);
+        });
+        
+        // Check if person should be kept apart from someone
+        const mustKeepApartFrom = [];
+        keepApart.forEach(pair => {
+            if (pair[0] === person) mustKeepApartFrom.push(pair[1]);
+            if (pair[1] === person) mustKeepApartFrom.push(pair[0]);
+        });
         
         let hasStrangerInZone = false;
         let hasKnownPersonNearby = false;
@@ -207,16 +221,32 @@ const seatingAlgorithm = {
         interactionZone.forEach(zonePos => {
             const zonePerson = arrangement[zonePos];
             if (zonePerson !== -1) {
+                // CRITICAL: Check keep apart constraint
+                if (mustKeepApartFrom.includes(zonePerson)) {
+                    score -= 500; // Massive penalty for violating keep apart
+                    return;
+                }
+                
+                // Check if best friend
+                if (personBestFriends.includes(zonePerson)) {
+                    score -= 120; // Heavy penalty for best friends in interaction zone
+                    knownPeopleInZone++;
+                    return;
+                }
+                
+                // Check regular relationships
                 const rel = personRels.find(r => r.person === zonePerson);
                 if (rel) {
                     knownPeopleInZone++;
                     // PENALIZE known people in immediate interaction zone
-                    if (rel.type === 'best_friend') {
-                        score -= 100;
+                    if (rel.type === 'close_friend') {
+                        score -= 80;
                     } else if (rel.type === 'friend') {
-                        score -= 60;
+                        score -= 50;
                     } else if (rel.type === 'acquaintance') {
                         score -= 20;
+                    } else if (rel.type === 'know_by_sight') {
+                        score -= 5;
                     }
                 } else {
                     // REWARD strangers in interaction zone
@@ -230,23 +260,38 @@ const seatingAlgorithm = {
         nearbyZone.forEach(nearbyPos => {
             const nearbyPerson = arrangement[nearbyPos];
             if (nearbyPerson !== -1) {
+                // Check if best friend
+                if (personBestFriends.includes(nearbyPerson)) {
+                    hasKnownPersonNearby = true;
+                    score += 80; // REWARD best friends nearby (social bridge)
+                    return;
+                }
+                
+                // Check regular relationships
                 const rel = personRels.find(r => r.person === nearbyPerson);
                 if (rel) {
                     hasKnownPersonNearby = true;
                     // REWARD known people nearby (social bridge)
-                    if (rel.type === 'best_friend') {
+                    if (rel.type === 'close_friend') {
                         score += 70;
                     } else if (rel.type === 'friend') {
                         score += 50;
                     } else if (rel.type === 'acquaintance') {
                         score += 25;
+                    } else if (rel.type === 'know_by_sight') {
+                        score += 10;
                     }
                 }
             }
         });
         
-        // CRITICAL: Avoid complete stranger islands
-        if (hasStrangerInZone && !hasKnownPersonNearby && personRels.length > 0) {
+        // INTROVERT handling: MUST have known person nearby
+        if (isIntrovert && !hasKnownPersonNearby && (personRels.length > 0 || personBestFriends.length > 0)) {
+            score -= 100; // Heavy penalty for introvert isolation
+        }
+        
+        // CRITICAL: Avoid complete stranger islands for everyone
+        if (hasStrangerInZone && !hasKnownPersonNearby && (personRels.length > 0 || personBestFriends.length > 0)) {
             score -= 40; // Penalty for isolation
         }
         

@@ -84,6 +84,10 @@
             
             <div class="name-input-container">
                 <input type="text" id="nameInput" placeholder="Guest name" class="input-medium">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="introvertCheck">
+                    <span>Introvert</span>
+                </label>
                 <button class="btn-secondary" onclick="app.addGuest()">Add</button>
             </div>
             
@@ -111,17 +115,63 @@
             
             <div class="button-group">
                 <button class="btn-secondary" onclick="app.goToStep('guest-names')">Back</button>
+                <button class="btn-primary" onclick="app.goToStep('best-friends')">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 5: Best Friends -->
+    <div id="best-friends" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Mark best friends</h2>
+            <p class="step-subtitle">Couples are automatically best friends. Add any other best friend pairs.</p>
+            
+            <div class="couple-input">
+                <select id="bestfriend1" class="input-medium"></select>
+                <span class="couple-connector">+</span>
+                <select id="bestfriend2" class="input-medium"></select>
+                <button class="btn-secondary" onclick="app.addBestFriend()">Add Best Friends</button>
+            </div>
+            
+            <div id="bestFriendList" class="couple-list"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="app.goToStep('couples')">Back</button>
+                <button class="btn-primary" onclick="app.goToStep('keep-apart')">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Keep Apart -->
+    <div id="keep-apart" class="screen">
+        <div class="container">
+            <div class="header-small">🪑 TableSitter</div>
+            <h2>Anyone to keep apart?</h2>
+            <p class="step-subtitle">Mark people who should NOT sit near each other (optional)</p>
+            
+            <div class="couple-input">
+                <select id="apart1" class="input-medium"></select>
+                <span class="couple-connector">≠</span>
+                <select id="apart2" class="input-medium"></select>
+                <button class="btn-secondary" onclick="app.addKeepApart()">Add</button>
+            </div>
+            
+            <div id="keepApartList" class="couple-list"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="app.goToStep('best-friends')">Back</button>
                 <button class="btn-primary" onclick="app.startRelationships()">Next</button>
             </div>
         </div>
     </div>
 
-    <!-- Step 5: Relationships -->
+    <!-- Step 7: Relationships -->
     <div id="relationships" class="screen">
         <div class="container">
             <div class="header-small">🪑 TableSitter</div>
-            <h2 id="relationshipTitle">Who does [Name] know well?</h2>
-            <p class="step-subtitle">Select up to 3 people (we'll keep them apart to encourage mixing!)</p>
+            <h2 id="relationshipTitle">Who does [Name] know?</h2>
+            <p class="step-subtitle">Select up to 2 people and their relationship level</p>
             
             <div class="progress-bar">
                 <div id="progressFill" class="progress-fill"></div>
@@ -137,7 +187,7 @@
         </div>
     </div>
 
-    <!-- Step 6: Results -->
+    <!-- Step 8: Results -->
     <div id="results" class="screen">
         <div class="container-wide">
             <div class="header-small">🪑 TableSitter</div>

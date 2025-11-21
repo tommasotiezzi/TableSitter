@@ -3,7 +3,10 @@ const app = {
         guestCount: 0,
         tableLayout: '',
         guests: [],
+        introverts: [], // indices of introverted guests
         couples: [],
+        bestFriends: [], // separate from couples
+        keepApart: [],
         relationships: {},
         currentPersonIndex: 0
     },
@@ -15,6 +18,17 @@ const app = {
         // Populate couple dropdowns when entering couples step
         if (stepId === 'couples') {
             this.populateCoupleSelects();
+        }
+        
+        // Populate best friends dropdowns and render list
+        if (stepId === 'best-friends') {
+            this.populateBestFriendSelects();
+            this.renderBestFriendList();
+        }
+        
+        // Populate keep apart dropdowns
+        if (stepId === 'keep-apart') {
+            this.populateKeepApartSelects();
         }
     },
 
@@ -50,6 +64,7 @@ const app = {
 
     addGuest() {
         const input = document.getElementById('nameInput');
+        const introvertCheck = document.getElementById('introvertCheck');
         const name = input.value.trim();
         
         if (!name) {
@@ -67,8 +82,15 @@ const app = {
             return;
         }
         
+        const guestIndex = this.data.guests.length;
         this.data.guests.push(name);
+        
+        if (introvertCheck.checked) {
+            this.data.introverts.push(guestIndex);
+        }
+        
         input.value = '';
+        introvertCheck.checked = false;
         this.renderGuestList();
         this.checkNamesComplete();
     },
@@ -81,12 +103,15 @@ const app = {
 
     renderGuestList() {
         const container = document.getElementById('guestList');
-        container.innerHTML = this.data.guests.map((name, index) => `
-            <div class="guest-item">
-                <span>${name}</span>
-                <button class="remove-btn" onclick="app.removeGuest(${index})">×</button>
-            </div>
-        `).join('');
+        container.innerHTML = this.data.guests.map((name, index) => {
+            const isIntrovert = this.data.introverts.includes(index);
+            return `
+                <div class="guest-item">
+                    <span>${name}${isIntrovert ? ' <span class="intro-badge">🤫</span>' : ''}</span>
+                    <button class="remove-btn" onclick="app.removeGuest(${index})">×</button>
+                </div>
+            `;
+        }).join('');
         
         // Update counter
         document.getElementById('guestCounter').textContent = this.data.guests.length;
@@ -163,6 +188,166 @@ const app = {
         `).join('');
     },
 
+    // Best Friends functions
+    populateBestFriendSelects() {
+        const select1 = document.getElementById('bestfriend1');
+        const select2 = document.getElementById('bestfriend2');
+        
+        const options = this.data.guests.map((name, i) => 
+            `<option value="${i}">${name}</option>`
+        ).join('');
+        
+        select1.innerHTML = '<option value="">Select person</option>' + options;
+        select2.innerHTML = '<option value="">Select person</option>' + options;
+    },
+
+    addBestFriend() {
+        const idx1 = parseInt(document.getElementById('bestfriend1').value);
+        const idx2 = parseInt(document.getElementById('bestfriend2').value);
+        
+        if (isNaN(idx1) || isNaN(idx2)) {
+            alert('Please select both people');
+            return;
+        }
+        
+        if (idx1 === idx2) {
+            alert('Please select two different people');
+            return;
+        }
+        
+        // Check if already exists in couples
+        const existsInCouples = this.data.couples.some(couple => 
+            (couple[0] === idx1 && couple[1] === idx2) || 
+            (couple[0] === idx2 && couple[1] === idx1)
+        );
+        
+        if (existsInCouples) {
+            alert('This pair is already marked as a couple (automatically best friends)');
+            return;
+        }
+        
+        // Check if already exists in best friends
+        const exists = this.data.bestFriends.some(pair => 
+            (pair[0] === idx1 && pair[1] === idx2) || 
+            (pair[0] === idx2 && pair[1] === idx1)
+        );
+        
+        if (exists) {
+            alert('This pair is already marked as best friends');
+            return;
+        }
+        
+        this.data.bestFriends.push([idx1, idx2]);
+        this.renderBestFriendList();
+        
+        // Reset selects
+        document.getElementById('bestfriend1').value = '';
+        document.getElementById('bestfriend2').value = '';
+    },
+
+    removeBestFriend(index) {
+        this.data.bestFriends.splice(index, 1);
+        this.renderBestFriendList();
+    },
+
+    renderBestFriendList() {
+        const container = document.getElementById('bestFriendList');
+        
+        let html = '';
+        
+        // Show couples (checked, disabled)
+        if (this.data.couples.length > 0) {
+            html += this.data.couples.map(couple => `
+                <div class="couple-item couple-item-disabled">
+                    <span>✓ ${this.data.guests[couple[0]]} + ${this.data.guests[couple[1]]} <small>(couple)</small></span>
+                </div>
+            `).join('');
+        }
+        
+        // Show best friends (removable)
+        if (this.data.bestFriends.length > 0) {
+            html += this.data.bestFriends.map((pair, index) => `
+                <div class="couple-item">
+                    <span>${this.data.guests[pair[0]]} + ${this.data.guests[pair[1]]}</span>
+                    <button class="remove-btn" onclick="app.removeBestFriend(${index})">×</button>
+                </div>
+            `).join('');
+        }
+        
+        if (html === '') {
+            html = '<p style="text-align: center; color: var(--brown-500); padding: 20px;">No best friends added yet</p>';
+        }
+        
+        container.innerHTML = html;
+    },
+
+    // Keep Apart functions
+    populateKeepApartSelects() {
+        const select1 = document.getElementById('apart1');
+        const select2 = document.getElementById('apart2');
+        
+        const options = this.data.guests.map((name, i) => 
+            `<option value="${i}">${name}</option>`
+        ).join('');
+        
+        select1.innerHTML = '<option value="">Select person</option>' + options;
+        select2.innerHTML = '<option value="">Select person</option>' + options;
+    },
+
+    addKeepApart() {
+        const idx1 = parseInt(document.getElementById('apart1').value);
+        const idx2 = parseInt(document.getElementById('apart2').value);
+        
+        if (isNaN(idx1) || isNaN(idx2)) {
+            alert('Please select both people');
+            return;
+        }
+        
+        if (idx1 === idx2) {
+            alert('Please select two different people');
+            return;
+        }
+        
+        // Check if already exists
+        const exists = this.data.keepApart.some(pair => 
+            (pair[0] === idx1 && pair[1] === idx2) || 
+            (pair[0] === idx2 && pair[1] === idx1)
+        );
+        
+        if (exists) {
+            alert('This pair is already marked to keep apart');
+            return;
+        }
+        
+        this.data.keepApart.push([idx1, idx2]);
+        this.renderKeepApartList();
+        
+        // Reset selects
+        document.getElementById('apart1').value = '';
+        document.getElementById('apart2').value = '';
+    },
+
+    removeKeepApart(index) {
+        this.data.keepApart.splice(index, 1);
+        this.renderKeepApartList();
+    },
+
+    renderKeepApartList() {
+        const container = document.getElementById('keepApartList');
+        
+        if (this.data.keepApart.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--brown-500); padding: 20px;">No conflicts added</p>';
+            return;
+        }
+        
+        container.innerHTML = this.data.keepApart.map((pair, index) => `
+            <div class="couple-item">
+                <span>${this.data.guests[pair[0]]} ≠ ${this.data.guests[pair[1]]}</span>
+                <button class="remove-btn" onclick="app.removeKeepApart(${index})">×</button>
+            </div>
+        `).join('');
+    },
+
     startRelationships() {
         this.data.currentPersonIndex = 0;
         this.data.relationships = {};
@@ -180,7 +365,7 @@ const app = {
         const currentIdx = this.data.currentPersonIndex;
         const currentName = this.data.guests[currentIdx];
         
-        document.getElementById('relationshipTitle').textContent = `Who does ${currentName} know well?`;
+        document.getElementById('relationshipTitle').textContent = `Who does ${currentName} know?`;
         document.getElementById('currentPerson').textContent = currentIdx + 1;
         document.getElementById('totalPersons').textContent = this.data.guests.length;
         
@@ -188,13 +373,19 @@ const app = {
         const progress = ((currentIdx + 1) / this.data.guests.length) * 100;
         document.getElementById('progressFill').style.width = progress + '%';
         
-        // Render options (exclude current person and their partner if they're in a couple)
+        // Build list of excluded people (partner and best friends)
         let excludedIndices = [currentIdx];
         
         // Check if current person is in a couple
         this.data.couples.forEach(couple => {
             if (couple[0] === currentIdx) excludedIndices.push(couple[1]);
             if (couple[1] === currentIdx) excludedIndices.push(couple[0]);
+        });
+        
+        // Check if current person has best friends
+        this.data.bestFriends.forEach(pair => {
+            if (pair[0] === currentIdx) excludedIndices.push(pair[1]);
+            if (pair[1] === currentIdx) excludedIndices.push(pair[0]);
         });
         
         const container = document.getElementById('relationshipOptions');
@@ -206,7 +397,7 @@ const app = {
             const existing = currentRels.find(r => r.person === idx);
             const isChecked = existing ? 'checked' : '';
             const relType = existing ? existing.type : 'friend';
-            const isDisabled = !existing && currentRels.length >= 3;
+            const isDisabled = !existing && currentRels.length >= 2;
             
             return `
                 <div class="relationship-item ${isDisabled ? 'disabled' : ''}">
@@ -219,9 +410,10 @@ const app = {
                     <select id="type_${idx}" 
                             ${!existing ? 'disabled' : ''}
                             onchange="app.updateRelationshipType(${idx})">
-                        <option value="best_friend" ${relType === 'best_friend' ? 'selected' : ''}>Best Friend</option>
+                        <option value="close_friend" ${relType === 'close_friend' ? 'selected' : ''}>Close Friend</option>
                         <option value="friend" ${relType === 'friend' ? 'selected' : ''}>Friend</option>
                         <option value="acquaintance" ${relType === 'acquaintance' ? 'selected' : ''}>Acquaintance</option>
+                        <option value="know_by_sight" ${relType === 'know_by_sight' ? 'selected' : ''}>Know by Sight</option>
                     </select>
                 </div>
             `;
@@ -246,9 +438,9 @@ const app = {
         const currentRels = this.data.relationships[currentIdx];
         
         if (checkbox.checked) {
-            if (currentRels.length >= 3) {
+            if (currentRels.length >= 2) {
                 checkbox.checked = false;
-                alert('You can only select up to 3 relationships per person');
+                alert('You can only select up to 2 relationships per person');
                 return;
             }
             currentRels.push({
@@ -295,6 +487,9 @@ const app = {
         const arrangement = seatingAlgorithm.generate(
             this.data.guests.length,
             this.data.couples,
+            this.data.bestFriends,
+            this.data.keepApart,
+            this.data.introverts,
             this.data.relationships,
             this.data.tableLayout
         );
@@ -388,13 +583,17 @@ const app = {
             guestCount: 0,
             tableLayout: '',
             guests: [],
+            introverts: [],
             couples: [],
+            bestFriends: [],
+            keepApart: [],
             relationships: {},
             currentPersonIndex: 0
         };
         
         document.getElementById('guestCountInput').value = '';
         document.getElementById('nameInput').value = '';
+        document.getElementById('introvertCheck').checked = false;
         
         this.goToStep('landing');
     }
